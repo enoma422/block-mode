@@ -25,8 +25,6 @@ def hash_file(filename):
     return h.hexdigest()
 
 def encrypt_ECB_bytes(blkcipher, key, iv, src_bytes):
-    
-
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         # PKCS7 Padding
