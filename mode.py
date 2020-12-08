@@ -14,17 +14,9 @@ Padding
 -CFB : X 
 -CTR : X 
 '''
-# file의 hash값을 계산하는 함수
-def hash_file(filename):
-    h = hashlib.sha256()
-    with open(filename,'rb') as file:
-        buffer = 0
-        while buffer != b'':
-            buffer = file.read(1024*64)
-            h.update(buffer)
-    return h.hexdigest()
 
 def encrypt_ECB_bytes(blkcipher, key, iv, src_bytes):
+
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         # PKCS7 Padding
@@ -72,6 +64,7 @@ def encrypt_CBC_bytes(blkcipher, key, iv, src_bytes):
         pad_val = 16 - len(src_bytes) % 16
         pad = pad_val.to_bytes(1, byteorder='big', signed=True) * pad_val
         src_bytes += pad
+
         for i in range(nb_blocks+1):
             enc = xor(src_bytes[i * 16:(i + 1) * 16], iv) 
             iv = cipher.encrypt(enc) 
@@ -84,6 +77,7 @@ def encrypt_CBC_bytes(blkcipher, key, iv, src_bytes):
         pad_val = 8 - len(src_bytes) % 8
         pad = pad_val.to_bytes(1, byteorder='big', signed=True) * pad_val
         src_bytes += pad
+
         for i in range(nb_blocks+1):
             enc = xor(src_bytes[i * 8:(i + 1) * 8], iv) 
             iv = cipher.encrypt(enc) 
@@ -97,6 +91,7 @@ def decrypt_CBC_bytes(blkcipher, key, iv, src_bytes):
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 16)
+
         for i in range(nb_blocks+1):
             output = cipher.decrypt(src_bytes[i * 16:(i + 1) * 16]) 
             dec = xor(output, iv) 
@@ -106,6 +101,7 @@ def decrypt_CBC_bytes(blkcipher, key, iv, src_bytes):
     elif blkcipher == 1:
         cipher = DES.new(key, DES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 8)
+
         for i in range(nb_blocks+1):
             output = cipher.decrypt(src_bytes[i * 8:(i + 1) * 8]) 
             dec = xor(output, iv) 
@@ -121,6 +117,7 @@ def encrypt_OFB_bytes(blkcipher, key, iv, src_bytes):
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 16)
+
         for i in range(nb_blocks+1):
             iv = cipher.encrypt(iv)
             dst_bytes += xor(src_bytes[i * 16:(i + 1) * 16], iv) 
@@ -128,6 +125,7 @@ def encrypt_OFB_bytes(blkcipher, key, iv, src_bytes):
     elif blkcipher == 1:
         cipher = DES.new(key, DES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 8)
+
         for i in range(nb_blocks+1):
             iv = cipher.encrypt(iv)
             dst_bytes += xor(src_bytes[i * 8:(i + 1) * 8], iv)
@@ -140,6 +138,7 @@ def decrypt_OFB_bytes(blkcipher, key, iv, src_bytes):
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 16)
+
         for i in range(nb_blocks+1):
             iv = cipher.encrypt(iv) 
             tmp = xor(src_bytes[i * 16:(i + 1) * 16], iv) 
@@ -148,6 +147,7 @@ def decrypt_OFB_bytes(blkcipher, key, iv, src_bytes):
     elif blkcipher == 1:
         cipher = DES.new(key, DES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 8)
+
         for i in range(nb_blocks+1):
             iv = cipher.encrypt(iv) 
             tmp = xor(src_bytes[i * 8:(i + 1) * 8], iv) 
@@ -162,21 +162,19 @@ def encrypt_CFB_bytes(blkcipher, key, iv, src_bytes):
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 16)
+
         for i in range(nb_blocks+1):
             tmp = cipher.encrypt(iv)
-            print(binascii.hexlify(tmp)) 
             iv = xor(src_bytes[i * 16:(i + 1) * 16], tmp) 
-            print(binascii.hexlify(iv))
             dst_bytes += iv
 
     elif blkcipher == 1:
         cipher = DES.new(key, DES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 8)
+
         for i in range(nb_blocks+1):
             tmp = cipher.encrypt(iv) 
-            print(binascii.hexlify(tmp)) 
             iv = xor(src_bytes[i * 8:(i + 1) * 8], tmp)
-            print(binascii.hexlify(iv))
             dst_bytes += iv
 
     return dst_bytes[:len(src_bytes)]
@@ -187,6 +185,7 @@ def decrypt_CFB_bytes(blkcipher, key, iv, src_bytes):
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 16)
+
         for i in range(nb_blocks+1):
             tmp = cipher.encrypt(iv)
             dst_bytes += xor(src_bytes[i * 16:(i + 1) * 16], tmp) 
@@ -195,6 +194,7 @@ def decrypt_CFB_bytes(blkcipher, key, iv, src_bytes):
     elif blkcipher == 1:
         cipher = DES.new(key, DES.MODE_ECB)
         nb_blocks = (int)(len(src_bytes) / 8)
+
         for i in range(nb_blocks+1):
             tmp = cipher.encrypt(iv)
             dst_bytes += xor(src_bytes[i * 8:(i + 1) * 8], tmp) 
@@ -202,26 +202,58 @@ def decrypt_CFB_bytes(blkcipher, key, iv, src_bytes):
 
     return dst_bytes[:len(src_bytes)]
 
-def encrypt_CTR_bytes(blkcipher, key, iv, src_bytes):
+def encrypt_CTR_bytes(blkcipher, key, ctr, src_bytes):
     dst_bytes = b''
     tmp = b''
-    nb_blocks = (int)(len(src_bytes) / 16)
 
     if blkcipher == 0:
         cipher = AES.new(key, AES.MODE_ECB)
+        nb_blocks = (int)(len(src_bytes) / 16)
+
+        for i in range(nb_blocks+1):
+            tmp = cipher.encrypt(ctr)
+            dst_bytes += xor(src_bytes[i * 16:(i + 1) * 16], tmp) 
+            ctr = int.from_bytes(ctr, byteorder='big') + 1
+            ctr = ctr.to_bytes(16, byteorder='big', signed=0)
+
     elif blkcipher == 1:
         cipher = DES.new(key, DES.MODE_ECB)
+        nb_blocks = (int)(len(src_bytes) / 8)
+
+        for i in range(nb_blocks+1):
+            tmp = cipher.encrypt(ctr) 
+            dst_bytes += xor(src_bytes[i * 8:(i + 1) * 8], tmp)
+            ctr = int.from_bytes(ctr, byteorder='big') + 1
+            ctr = ctr.to_bytes(16, byteorder='big', signed=0)
+
+    return dst_bytes[:len(src_bytes)]
+
     
-    for i in range(nb_blocks+1):
-        cnt = bytes(i)
-        print(binascii.hexlify((iv + cnt)[:len(iv)]))
-        tmp = cipher.encrypt((iv + cnt)[:len(iv)]) 
-        print(binascii.hexlify(tmp))
-        iv = xor(src_bytes[i * 16:(i + 1) * 16], tmp) 
-        dst_bytes += iv
+def decrypt_CTR_bytes(blkcipher, key, ctr, src_bytes):
+    dst_bytes = b''
+    tmp = b''
 
-    return cipher.encrypt(src_bytes)
+    if blkcipher == 0:
+        cipher = AES.new(key, AES.MODE_ECB)
+        nb_blocks = (int)(len(src_bytes) / 16)
 
+        for i in range(nb_blocks+1):
+            tmp = cipher.encrypt(ctr)
+            dst_bytes += xor(src_bytes[i * 16:(i + 1) * 16], tmp) 
+            ctr = int.from_bytes(ctr, byteorder='big') + 1
+            ctr = ctr.to_bytes(16, byteorder='big', signed=0)
+
+    elif blkcipher == 1:
+        cipher = DES.new(key, DES.MODE_ECB)
+        nb_blocks = (int)(len(src_bytes) / 8)
+
+        for i in range(nb_blocks+1):
+            tmp = cipher.encrypt(ctr) 
+            dst_bytes += xor(src_bytes[i * 8:(i + 1) * 8], tmp)
+            ctr = int.from_bytes(ctr, byteorder='big') + 1
+            ctr = ctr.to_bytes(16, byteorder='big', signed=0)
+
+    return dst_bytes[:len(src_bytes)]
 
 
 #BlkCip = 0 #AES
@@ -230,17 +262,18 @@ BlkCip = 1 #DES
 #mode = 0 #ECB
 #mode = 1 #CBC
 #mode = 2 #OFB
-mode = 3 #CFB pdf.57
-#mode = 4 #CTR
+#mode = 3 #CFB pdf.57
+mode = 4 #CTR
 
 root = tkinter.Tk()
 root.withdraw()
 
 if(BlkCip == 0):
-    key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c") #ECB, CBC AES
-    iv = bytes.fromhex("000102030405060708090a0b0c0d0e0f") #ECB, CBC AES
-    msg = bytes.fromhex("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710") #ECB, CBC AES
+    key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c") 
+    iv = bytes.fromhex("000102030405060708090a0b0c0d0e0f") #CBC, OFB, CFB
+    ctr = bytes.fromhex("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff") #CTR
 
+    msg = bytes.fromhex("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710") 
     print (binascii.hexlify(msg))
 
     if(mode == 0):
@@ -260,17 +293,16 @@ if(BlkCip == 0):
         print (binascii.hexlify(dst))
         dst2 = decrypt_CFB_bytes(0, key, iv, dst)
     elif(mode == 4):
-        dst = encrypt_CTR_bytes(0, key, iv, msg)
+        dst = encrypt_CTR_bytes(0, key, ctr, msg)
         print (binascii.hexlify(dst))
-        #dst2 = decrypt_CTR_bytes(0, key, iv, dst)
+        dst2 = decrypt_CTR_bytes(0, key, ctr, dst)
 
 elif(BlkCip == 1):
-    key = bytes.fromhex("0123456789abcdef") #DES
-    iv = bytes.fromhex("1234567890abcdef") #DES
-    #iv = bytes.fromhex("0000000000000000")
-    #msg = bytes.fromhex("4e6f77206973207468652074696d6520666f7220616c6c20") #ECB, CBC DES
-    #msg = bytes.fromhex("68652074696d6520")
-    msg = bytes.fromhex("4e6f7720697320746865")
+    key = bytes.fromhex("0123456789abcdef") 
+    iv = bytes.fromhex("1234567890abcdef") #CBC, OFB, CFB
+    ctr = bytes.fromhex("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff") #CTR
+
+    msg = bytes.fromhex("4e6f77206973207468652074696d6520666f7220616c6c20")
 
     print (binascii.hexlify(msg))
 
@@ -291,9 +323,9 @@ elif(BlkCip == 1):
         print (binascii.hexlify(dst))
         dst2 = decrypt_CFB_bytes(1, key, iv, dst)
     elif(mode == 4):
-        dst = encrypt_CTR_bytes(1, key, iv, msg)
+        dst = encrypt_CTR_bytes(1, key, ctr, msg)
         print (binascii.hexlify(dst))
-        #dst2 = decrypt_CTR_bytes(1, key, iv, dst)
+        dst2 = decrypt_CTR_bytes(1, key, ctr, dst)
 
 
 print (binascii.hexlify(dst2))
@@ -304,8 +336,11 @@ print (msg == dst2)
 
 
 
-
 '''
+---------------------------------------------------------------------
+    TEST VECTOR
+---------------------------------------------------------------------
+
 AES-128
 
 << ECB mode >>
@@ -395,5 +430,74 @@ Ciphertext 5ae4df3edbd5d35e5b4f09020db03eab
 Plaintext  f69f2445df4f9b17ad2b417be66c3710 
 Ciphertext 1e031dda2fbe03d1792170a0f3009cee
 
+---------------------------------------------------------------------
+
+DES
+
+<< ECB mode >>
+Key  0123456789abcdef
+
+Plaintext  4e6f772069732074
+Ciphertext 3fa40e8a984d4815
+          
+Plaintext  68652074696d6520
+Ciphertext 6a271787ab8883f9
+          
+Plaintext  666f7220616c6c20
+Ciphertext 893d51ec4b563b53
+
+
+<< CBC mode >>
+Key  0123456789abcdef
+IV   1234567890abcdef
+
+Plaintext  4e6f772069732074
+Ciphertext e5c7cdde872bf27c
+          
+Plaintext  68652074696d6520
+Ciphertext 43e934008c389c0f
+          
+Plaintext  666f7220616c6c20
+Ciphertext 683788499a7c05f6
+
+
+<< CFB mode >>
+Key  0123456789abcdef
+IV   1234567890abcdef
+
+Plaintext  4e6f772069732074
+Ciphertext f3096249c7f46e51
+          
+Plaintext  68652074696d6520
+Ciphertext a69e839bla92f784
+          
+Plaintext  666f7220616c6c20
+Ciphertext 03467133898ea622
+
+<< OFB mode >>
+Key  0123456789abcdef
+IV   1234567890abcdef
+
+Plaintext  4e6f772069732074
+Ciphertext f3096249c7f46e51
+          
+Plaintext  68652074696d6520
+Ciphertext 35f24a242eeb3d3f
+          
+Plaintext  666f7220616c6c20
+Ciphertext 3d6d5be3255af8c3
+
+<< CTR mode >>
+Key            0123456789abcdef
+Init.Counter   f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+
+Plaintext  4e6f772069732074
+Ciphertext 4b45aec2b39dcc09
+          
+Plaintext  68652074696d6520
+Ciphertext 6d4ff996b383895d
+          
+Plaintext  666f7220616c6c20
+Ciphertext 6345abc2bb82805d
 
 '''
