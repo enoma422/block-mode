@@ -1,4 +1,4 @@
-# Block Cipher Operation Modes Library
+# Block cipher mode of operation Library
 
 ## Development Period
 Sep 2020 - Dec 2020, Aug 2021 - Sep 2021
